@@ -1,22 +1,13 @@
 const debug = require("debug")("contract:execute"); // eslint-disable-line no-unused-vars
 var Web3PromiEvent = require("web3-core-promievent");
 var EventEmitter = require("events");
+var BigNumber = require("bignumber.js");
 var utils = require("./utils");
 var StatusError = require("./statuserror");
 var Reason = require("./reason");
 var handlers = require("./handlers");
 var override = require("./override");
 var reformat = require("./reformat");
-var BN = require("bn.js");
-
-function createBN(n) {
-  if (typeof n === "string" && n.startsWith("0x")) {
-    n = n.slice(2);
-    return new BN(n, "hex");
-  } else {
-    return new BN(n);
-  }
-}
 
 var execute = {
   // -----------------------------------  Helpers --------------------------------------------------
@@ -38,12 +29,14 @@ var execute = {
       web3.eth
         .estimateGas(params)
         .then(gas => {
-          var bestEstimate = createBN(gas).muln(constructor.gasMultiplier);
+          var bestEstimate = new BigNumber(gas)
+            .multipliedBy(constructor.gasMultiplier)
+            .integerValue(BigNumber.ROUND_DOWN);
 
           // Don't go over blockLimit
-          const limit = createBN(blockLimit);
-          bestEstimate.gte(limit)
-            ? accept("0x" + limit.subn(1).toString(16))
+          const limit = new BigNumber(blockLimit);
+          bestEstimate.isGreaterThanOrEqualTo(limit)
+            ? accept("0x" + limit.minus(1).toString(16))
             : accept("0x" + bestEstimate.toString(16));
 
           // We need to let txs that revert through.

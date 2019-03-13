@@ -1,19 +1,10 @@
 var TruffleError = require("truffle-error");
 var inherits = require("util").inherits;
-var BN = require("bn.js");
+var BigNumber = require("bignumber.js");
 
 inherits(StatusError, TruffleError);
 
 var defaultGas = 90000;
-
-function createBN(n) {
-  if (typeof n === "string" && n.startsWith("0x")) {
-    n = n.slice(2);
-    return new BN(n, "hex");
-  } else {
-    return new BN(n);
-  }
-}
 
 function StatusError(args, tx, receipt, reason) {
   var message;
@@ -22,7 +13,7 @@ function StatusError(args, tx, receipt, reason) {
 
   if (reason) reasonString = `Reason given: ${reason}.`;
 
-  if (createBN(receipt.gasUsed).eq(createBN(gasLimit))) {
+  if (new BigNumber(receipt.gasUsed).isEqualTo(new BigNumber(gasLimit))) {
     message =
       "Transaction: " +
       tx +
