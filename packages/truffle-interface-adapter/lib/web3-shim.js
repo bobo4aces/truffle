@@ -2,6 +2,7 @@ const Web3 = require("web3");
 
 const ethereumOverloads = require("./ethereum-overloads");
 const quorumOverloads = require("./quorum-overloads");
+const AxCoreProviderExtension = require("./axcore-provider-extension");
 
 // This is a temporary shim to support the basic issues with Quorum
 
@@ -22,6 +23,22 @@ class Web3Shim extends Web3 {
     this.initInterface();
   }
 
+  setProvider(provider) {
+    switch (this.networkType) {
+      case "axcore": {
+        provider = new AxCoreProviderExtension(provider);
+        break;
+      }
+      case "quorum":
+      case "ethereum":
+      default: {
+        break;
+      }
+    }
+
+    super.setProvider(provider);
+  }
+
   setNetworkType(networkType) {
     this.networkType = networkType;
     this.initInterface();
@@ -33,6 +50,7 @@ class Web3Shim extends Web3 {
         this.initQuorum();
         break;
       }
+      case "axcore":
       case "ethereum":
       default: {
         this.initEthereum();
@@ -54,6 +72,17 @@ class Web3Shim extends Web3 {
     quorumOverloads.getBlock(this);
     quorumOverloads.getTransaction(this);
     quorumOverloads.getTransactionReceipt(this);
+  }
+
+  hasContractOptions() {
+    return this.networkType === "axcore";
+  }
+
+  registerNewContract(bytecode, options) {
+    // we're creating a new contract with this bytecode
+    // we should watch for this bytecode, and process
+    // options accordingly. once it's deployed, we can
+    // associate an address to the options.
   }
 }
 
